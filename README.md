@@ -1,7 +1,15 @@
-# mini-diffusion
-A Small lightweight diffusion model in PyTorch.
+# Wasserstein Diffusion model 
+An implementation of diffusion model with wasserstein score function based on https://github.com/Vrushank264/mini-diffusion
 
-<h3> <b> Result: </b> </h3>
+# How to run train.py
+```
+python3 
+```
+# Result
 
-![GIF](https://github.com/Vrushank264/mini-diffusion/blob/main/results/gif.gif)
+# Reference
+- [Wasserstein information matrix](https://arxiv.org/abs/1910.11248)
+- [Information Geometry of Wasserstein Statistics on Shapes and Affine Deformations](https://arxiv.org/abs/2307.12508)
+
+
 
