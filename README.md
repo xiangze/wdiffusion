@@ -1,0 +1,2 @@
+# wdiffusion
+Wasserstein Diffusion Model
