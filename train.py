@@ -9,10 +9,9 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 from tqdm import tqdm
-import wandb
 
 from model.Unet import UNet
-from ddpm import DDPM
+from ddpm import WDDPM
 
 
 class AverageMeter:
@@ -51,12 +50,10 @@ def plot(ddpm_model, num_cls, ws, save_dir, epoch):
     return grid_arr.transpose(1,2,0)
         
         
-def train(unet, ddpm_model, loader, opt, criterion, scaler, num_cls, save_dir, ws, epoch, num_epochs):
+def train(unet, ddpm_model, loader, opt, criterion, scaler, num_cls, save_dir, ws, epoch, num_epochs,harfprecision=False):
 
     unet.train()
     ddpm_model.train()
-
-    #wandb.log({        'Epoch': epoch    })
 
     loop = tqdm(loader, position = 0, leave = True)
     loss_ = AverageMeter()
@@ -64,15 +61,19 @@ def train(unet, ddpm_model, loader, opt, criterion, scaler, num_cls, save_dir, w
     for idx, (img, class_lbl) in enumerate(loop):
 
         img = img.cuda(non_blocking = True)
+        img=img+1e-9
         lbl = class_lbl.cuda(non_blocking = True)
         
         opt.zero_grad(set_to_none = True)
-
-        with torch.cuda.amp.autocast_mode.autocast():
-
-            noise, x_t, ctx, timestep, ctx_mask = ddpm_model(img, lbl)
-            pred = unet(x_t.half(), ctx, timestep.half(), ctx_mask.half())
-            loss = criterion(noise, pred)
+        if(harfprecision):
+            with torch.cuda.amp.autocast_mode.autocast():
+                noise, x_t, ctx, timestep, ctx_mask = ddpm_model(img, lbl)
+                pred = unet(x_t.half(), ctx, timestep.half(), ctx_mask.half())
+                loss = criterion(noise, pred)
+        else:
+                noise, x_t, ctx, timestep, ctx_mask = ddpm_model(img, lbl)
+                pred = unet(x_t, ctx, timestep, ctx_mask)
+                loss = criterion(noise, pred)
 
         scaler.scale(loss).backward()
         scaler.step(opt)
@@ -129,7 +130,7 @@ def main():
     num_epochs = 20
     save_dir = 'result'
     unet = UNet(1, 128, num_cls).cuda()
-    ddpm_model = DDPM(unet, (1e-4, 0.02)).cuda()
+    ddpm_model = WDDPM(unet, (1e-4, 0.02)).cuda()
     
     if(os.path.exists(save_dir+"unet.pth")):
         unet.load_state_dict(torch.load(save_dir+'unet.pth'))
@@ -153,5 +154,4 @@ def main():
 
 if __name__ == '__main__':
 
-    #wandb.init(project = 'MinDiffusion')
     main()

@@ -119,13 +119,15 @@ class DDPM(nn.Module):
         return x_i, np.array(x_is)
 
 def multinormal_like(x):
-    mean,var=torch.var_mean(x)
-    dist = multivariate_normal.MultivariateNormal(loc=mean, covariance_matrix=var)
+    mean=torch.mean(x, dim=0, keepdim=True)
+    x0T=torch.flatten(x,start_dim=1).T
+    cov=torch.cov(x0T)
+    dist = multivariate_normal.MultivariateNormal(loc=mean, covariance_matrix=cov)
     return dist.sample(x.shape)
 
 class WDDPM(DDPM):
     def __init__(self, model, betas, T = 500, dropout_p = 0.1):
-        super().__init__() 
+        super().__init__(model,betas,T,dropout_p) 
 
     def forward(self, x, cls):
         timestep = torch.randint(1, self.T, (x.shape[0], )).cuda()
