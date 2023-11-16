@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import math
-
+from  torch.distributions import multivariate_normal
 
 def betas_for_alpha_bar(T, alpha_bar, max_beta):
 
@@ -117,4 +117,25 @@ class DDPM(nn.Module):
             
         
         return x_i, np.array(x_is)
+
+def multinormal_like(x):
+    mean,var=torch.var_mean(x)
+    dist = multivariate_normal.MultivariateNormal(loc=mean, covariance_matrix=var)
+    return dist.sample(x.shape)
+
+class WDDPM(DDPM):
+    def __init__(self, model, betas, T = 500, dropout_p = 0.1):
+        super().__init__() 
+
+    def forward(self, x, cls):
+        timestep = torch.randint(1, self.T, (x.shape[0], )).cuda()
+        noise=multinormal_like(x)
+        #with wasserstein score function
+        x_t = (self.sqrt_abar_t[timestep, None, None, None] * x + self.sqrt_abar_t1[timestep, None, None, None] * noise)
+    
+        #dropout mask used at Unet
+        ctx_mask = torch.bernoulli(torch.zeros_like(cls) + self.dropout_p).cuda()
+        
+        return noise, x_t, cls, timestep / self.T, ctx_mask
+
 

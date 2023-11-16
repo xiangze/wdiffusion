@@ -56,9 +56,7 @@ def train(unet, ddpm_model, loader, opt, criterion, scaler, num_cls, save_dir, w
     unet.train()
     ddpm_model.train()
 
-    wandb.log({
-        'Epoch': epoch
-    })
+    #wandb.log({        'Epoch': epoch    })
 
     loop = tqdm(loader, position = 0, leave = True)
     loss_ = AverageMeter()
@@ -84,9 +82,7 @@ def train(unet, ddpm_model, loader, opt, criterion, scaler, num_cls, save_dir, w
         loss_.update(loss.detach(), img.size(0))
 
         if idx % 200 == 0:
-            wandb.log({
-                'Loss': loss_.avg
-            })
+            #wandb.log({'Loss': loss_.avg})
             print(loss_.avg)
         
 
@@ -131,15 +127,16 @@ def main():
 
     num_cls = 10
     num_epochs = 20
-    save_dir = '/content/drive/MyDrive/Diffusion'
+    save_dir = 'result'
     unet = UNet(1, 128, num_cls).cuda()
     ddpm_model = DDPM(unet, (1e-4, 0.02)).cuda()
-
-    #unet.load_state_dict(torch.load('/content/drive/MyDrive/Diffusion/unet.pth'))
-    #ddpm_model.load_state_dict(torch.load('/content/drive/MyDrive/Diffusion/ddpm.pth'))
+    
+    if(os.path.exists(save_dir+"unet.pth")):
+        unet.load_state_dict(torch.load(save_dir+'unet.pth'))
+        ddpm_model.load_state_dict(torch.load(save_dir+'ddpm.pth'))
 
     tr = T.Compose([T.ToTensor()])
-    dataset = tv.datasets.MNIST('/content/data', True, transform = tr, download = True)
+    dataset = tv.datasets.MNIST('data', True, transform = tr, download = True)
     loader = DataLoader(dataset, batch_size = 64, shuffle = True, num_workers = 0)
 
     opt = torch.optim.Adam(list(ddpm_model.parameters()) + list(unet.parameters()), lr = 1e-4)
