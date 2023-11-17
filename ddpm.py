@@ -123,6 +123,10 @@ def multinormal_like(x):
     mean=torch.reshape(mean,mean.shape[1:])
     x0T=torch.flatten(x,start_dim=1).T
     cov=torch.cov(x0T)
+    eigenvalues,eigenvectors=torch.linalg.eig(cov)
+    eigenvectors=eigenvectors.real
+    eigenvalues=torch.maximum(torch.ones_like(eigenvalues.real)*1e-8,eigenvalues.real)
+    cov=eigenvectors@torch.diag(eigenvalues)@eigenvectors.T
 
     dist = multivariate_normal.MultivariateNormal(loc=mean, covariance_matrix=cov)
     return dist.sample(x.shape)
