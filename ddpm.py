@@ -119,9 +119,11 @@ class DDPM(nn.Module):
         return x_i, np.array(x_is)
 
 def multinormal_like(x):
-    mean=torch.mean(x, dim=0, keepdim=True)
+    mean=torch.mean(x, dim=0)
+    mean=torch.reshape(mean,mean.shape[1:])
     x0T=torch.flatten(x,start_dim=1).T
     cov=torch.cov(x0T)
+
     dist = multivariate_normal.MultivariateNormal(loc=mean, covariance_matrix=cov)
     return dist.sample(x.shape)
 
