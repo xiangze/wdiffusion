@@ -118,18 +118,31 @@ class DDPM(nn.Module):
         
         return x_i, np.array(x_is)
 
-def multinormal_like(x):
+def _multinormal_like(x):
     mean=torch.mean(x, dim=0)
     mean=torch.reshape(mean,mean.shape[1:])
     x0T=torch.flatten(x,start_dim=1).T
     cov=torch.cov(x0T)
     eigenvalues,eigenvectors=torch.linalg.eig(cov)
     eigenvectors=eigenvectors.real
-    eigenvalues=torch.maximum(torch.ones_like(eigenvalues.real)*1e-8,eigenvalues.real)
+    eigenvalues=torch.maximum(torch.ones_like(eigenvalues.real)*1e-6,eigenvalues.real)
     cov=eigenvectors@torch.diag(eigenvalues)@eigenvectors.T
 
     dist = multivariate_normal.MultivariateNormal(loc=mean, covariance_matrix=cov)
     return dist.sample(x.shape)
+
+def multinormal_like(x):
+    batchsize=x.shape[0]
+    x0=torch.flatten(x,start_dim=1)
+    mean=torch.mean(x0, dim=0)
+    cov=torch.cov(x0.T)
+    evalue,evec=torch.linalg.eig(cov)
+    evec=evec.real
+    A=evec@torch.diag(torch.sqrt(evalue.real))
+
+    An= A.unsqueeze(0).repeat(batchsize,1,1)
+    out=An@torch.rand_like(mean)+mean.repeat(batchsize,1)
+    return out.reshape(x.shape) 
 
 class WDDPM(DDPM):
     def __init__(self, model, betas, T = 500, dropout_p = 0.1):
