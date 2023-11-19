@@ -72,7 +72,8 @@ def train(unet, ddpm_model, loader, opt, criterion, scaler, num_cls, save_dir, w
                 loss = criterion(noise, pred)
         else:
                 noise, x_t, ctx, timestep, ctx_mask = ddpm_model(img, lbl)
-                pred = unet(x_t, ctx, timestep, ctx_mask)
+                pred = unet(x_t.float(), ctx, timestep.float(), ctx_mask.float())
+                #pred = unet(x_t, ctx, timestep, ctx_mask)
                 loss = criterion(noise, pred)
 
         scaler.scale(loss).backward()
