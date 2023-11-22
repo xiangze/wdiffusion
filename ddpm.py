@@ -132,13 +132,16 @@ def _multinormal_like(x):
     return dist.sample(x.shape)
 
 def multinormal_like(x):
+#    x=torch.rand_like(x[:2,0,:4,:4])
+    
     batchsize=x.shape[0]
     x0=torch.flatten(x,start_dim=1)
     mean=torch.mean(x0, dim=0)
     cov=torch.cov(x0.T)
     evalue,evec=torch.linalg.eig(cov)
     evec=evec.real
-    A=evec@torch.diag(torch.sqrt(evalue.real))
+    evalue=evalue.real
+    A=evec@torch.diag(torch.sqrt(torch.maximum(torch.zeros_like(evalue),evalue)))
 
     An= A.unsqueeze(0).repeat(batchsize,1,1)
     out=An@torch.rand_like(mean)+mean.repeat(batchsize,1)
